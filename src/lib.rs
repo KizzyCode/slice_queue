@@ -8,24 +8,24 @@ use std::{
 };
 
 #[derive(Default)]
-pub struct SliceDeque<T> {
+pub struct SliceQueue<T> {
 	backing: Vec<T>
 }
-impl<T> SliceDeque<T> {
-	/// Creates a new `SliceDeque`
+impl<T> SliceQueue<T> {
+	/// Creates a new `SliceQueue`
 	///
-	/// Returns _the new `SliceDeque`_
+	/// Returns _the new `SliceQueue`_
 	pub fn new() -> Self {
-		SliceDeque{ backing: Vec::new() }
+		SliceQueue{ backing: Vec::new() }
 	}
-	/// Creates a new `SliceDeque` with a preallocated capacity `n`
+	/// Creates a new `SliceQueue` with a preallocated capacity `n`
 	///
 	/// Parameters:
 	///  - `n`: The capacity to preallocate
 	///
-	/// Returns _the new `SliceDeque`_
+	/// Returns _the new `SliceQueue`_
 	pub fn with_capacity(n: usize) -> Self {
-		SliceDeque{ backing: Vec::with_capacity(n) }
+		SliceQueue{ backing: Vec::with_capacity(n) }
 	}
 	
 	
@@ -256,31 +256,31 @@ impl<T> SliceDeque<T> {
 		})
 	}
 }
-impl<T: Debug> Debug for SliceDeque<T> {
+impl<T: Debug> Debug for SliceQueue<T> {
 	fn fmt(&self, f: &mut Formatter) -> FmtResult {
 		Debug::fmt(&**self, f)
 	}
 }
-impl<T> From<Vec<T>> for SliceDeque<T> {
+impl<T> From<Vec<T>> for SliceQueue<T> {
 	fn from(vec: Vec<T>) -> Self {
-		SliceDeque{ backing: vec }
+		SliceQueue { backing: vec }
 	}
 }
-impl<T> Clone for SliceDeque<T> where T: Clone {
+impl<T> Clone for SliceQueue<T> where T: Clone {
 	fn clone(&self) -> Self {
-		SliceDeque{ backing: self.backing.clone() }
+		SliceQueue { backing: self.backing.clone() }
 	}
 }
 
 macro_rules! impl_range_index {
     ($b:ty) => {
-    	impl<T> Index<$b> for SliceDeque<T> {
+    	impl<T> Index<$b> for SliceQueue<T> {
     		type Output = [T];
 			fn index(&self, bounds: $b) -> &[T] {
 				&self.backing[self.range_from_bounds(bounds)]
 			}
     	}
-    	impl<T> IndexMut<$b> for SliceDeque<T> {
+    	impl<T> IndexMut<$b> for SliceQueue<T> {
 			fn index_mut(&mut self, bounds: $b) -> &mut [T] {
 				let range = self.range_from_bounds(bounds);
 				&mut self.backing[range]
@@ -294,25 +294,25 @@ impl_range_index!(RangeTo<usize>);
 impl_range_index!(RangeInclusive<usize>);
 impl_range_index!(RangeToInclusive<usize>);
 
-impl<T> Index<usize> for SliceDeque<T> {
+impl<T> Index<usize> for SliceQueue<T> {
 	type Output = T;
 	fn index(&self, i: usize) -> &T {
 		&self.backing[i]
 	}
 }
-impl<T> IndexMut<usize> for SliceDeque<T> {
+impl<T> IndexMut<usize> for SliceQueue<T> {
 	fn index_mut(&mut self, i: usize) -> &mut T {
 		&mut self.backing[i]
 	}
 }
 
-impl<T> Deref for SliceDeque<T> {
+impl<T> Deref for SliceQueue<T> {
 	type Target = <Vec<T> as Deref>::Target;
 	fn deref(&self) -> &Self::Target {
 		self.backing.deref()
 	}
 }
-impl<T> DerefMut for SliceDeque<T> {
+impl<T> DerefMut for SliceQueue<T> {
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		self.backing.deref_mut()
 	}
