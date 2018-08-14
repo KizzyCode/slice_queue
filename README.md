@@ -13,7 +13,7 @@ This library provides a optimized queue for efficient working with (byte-)slices
    type supports the `Clone` trait)
  - efficiently popping an arbitrary amount of elements from the front
  - direct access to the underlying buffer by either using `peek*` methods or by using (range-)indices
- - dereferencing the `SliceDeque<T>` like it's a `Vec<T>` (which usually results in a slice)
+ - dereferencing the `SliceQueue<T>` like it's a `Vec<T>` (which usually results in a slice)
 
 _Important: To be as efficient as possible it uses some raw pointer access. If this is a no-go for you, please either
 use another crate or provide some patches 😇_ 
