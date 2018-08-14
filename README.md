@@ -1,14 +1,14 @@
 [![License](https://img.shields.io/badge/License-BSD--2--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-slice_deque
+slice_queue
 ===========
-Welcome to my `slice_deque`-library 🎊
+Welcome to my `slice_queue`-library 🎊
 
 
 What this library is:
 ---------------------
-This library provides an VecDeque for efficient working with (byte-)slices. It allows you to
+This library provides a optimized queue for efficient working with (byte-)slices. It allows you to
  - efficiently push an arbitrary amount of elements by either consuming them or by cloning them from a slice (if the
    type supports the `Clone` trait)
  - efficiently popping an arbitrary amount of elements from the front
