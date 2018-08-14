@@ -1,0 +1,8 @@
+[package]
+name = "slice_deque"
+version = "0.1.0"
+authors = ["KizzyCode Software Labs./Keziah Biermann <development@kizzycode.de>"]
+description = "This library provides an VecDeque for efficient working with (byte-)slices"
+license = "BSD-2-Clause OR MIT"
+repository = "https://github.com/KizzyCode/byte_deque"
+readme = "README.md"
