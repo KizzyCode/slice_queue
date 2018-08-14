@@ -1,4 +1,4 @@
 .idea/
 target/
 Cargo.lock
-slice_deque.iml
+slice_queue.iml
