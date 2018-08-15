@@ -14,7 +14,7 @@ use std::{
 		Range, RangeFrom, RangeTo, RangeInclusive, RangeToInclusive, RangeBounds, Bound
 	}
 };
-#[cfg(feature = "fast_unsafe_code")]
+#[cfg(feature = "unsafe_fast_code")]
 use std::{ ptr, mem };
 #[cfg(feature = "deref")]
 use std::ops::{ Deref, DerefMut };
@@ -113,7 +113,12 @@ impl<T> SliceQueue<T> {
 	pub fn set_limit(&mut self, limit: usize) {
 		self.limit = limit
 	}
-	
+	/// Returns the amount of space remaining until `self.limit` is reached
+	///
+	/// Returns _the amount of space remaining in `self` until `self.limit` is reached_
+	pub fn remaining(&self) -> usize {
+		self.limit.checked_sub(self.len()).unwrap_or_default()
+	}
 	
 	/// Consumes the first element and returns it
 	///
@@ -139,7 +144,7 @@ impl<T> SliceQueue<T> {
 		if self.len() < n { return None }
 		
 		// Copy elements into a new vector
-		#[cfg(feature = "fast_unsafe_code")]
+		#[cfg(feature = "unsafe_fast_code")]
 		let elements = unsafe {
 			// Create target vector
 			let mut elements = Vec::with_capacity(n);
@@ -155,7 +160,7 @@ impl<T> SliceQueue<T> {
 			
 			elements
 		};
-		#[cfg(not(feature = "fast_unsafe_code"))]
+		#[cfg(not(feature = "unsafe_fast_code"))]
 		let elements = /* safe */ {
 			// Drain `n` elements and collect them
 			self.backing.drain(..n).collect()
@@ -176,7 +181,7 @@ impl<T> SliceQueue<T> {
 		
 		// Copy raw data
 		let to_move = dst.len();
-		#[cfg(feature = "fast_unsafe_code")]
+		#[cfg(feature = "unsafe_fast_code")]
 		unsafe {
 			// Replace the elements in dst
 			Self::replace_n(self.backing.as_ptr(), dst.as_mut_ptr(), to_move);
@@ -186,7 +191,7 @@ impl<T> SliceQueue<T> {
 			ptr::copy(self.backing[to_move..].as_ptr(), self.backing.as_mut_ptr(), remaining);
 			self.backing.set_len(remaining);
 		}
-		#[cfg(not(feature = "fast_unsafe_code"))]
+		#[cfg(not(feature = "unsafe_fast_code"))]
 		/* safe */ {
 			// Move `to_move` elements into `dst`
 			let (mut src, dst) = (self.backing.drain(..to_move), dst.iter_mut());
@@ -207,14 +212,14 @@ impl<T> SliceQueue<T> {
 		assert!(self.len() >= n, "`n` is larger than the amount of elements in `self`");
 		
 		// Drop `n` elements and copy the remaining elements to the front
-		#[cfg(feature = "fast_unsafe_code")]
+		#[cfg(feature = "unsafe_fast_code")]
 		unsafe {
 			// Move the remaining stored elements to the front and adjust the length
 			let remaining = self.len() - n;
 			Self::replace_n(self.backing[n..].as_ptr(), self.backing.as_mut_ptr(), remaining);
 			self.backing.set_len(remaining);
 		}
-		#[cfg(not(feature = "fast_unsafe_code"))]
+		#[cfg(not(feature = "unsafe_fast_code"))]
 		/* safe */ {
 			// Drain `n` elements from the front
 			self.backing.drain(..n);
@@ -328,7 +333,7 @@ impl<T> SliceQueue<T> {
 	///  - `src`: A pointer to the source elements
 	///  - `dst`: A pointer to the destination
 	///  - `n`: The amount of elements to copy
-	#[cfg(feature = "fast_unsafe_code")]
+	#[cfg(feature = "unsafe_fast_code")]
 	unsafe fn replace_n(src: *const T, dst: *mut T, n: usize) {
 		// Drop elements in dst if necessary
 		if mem::needs_drop::<T>() {

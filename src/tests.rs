@@ -106,7 +106,7 @@ fn test_range_from_bounds_end_underflow() {
 	slice_queue.range_from_bounds(0..=0);
 }
 
-#[test] #[cfg(feature = "fast_unsafe_code")]
+#[test] #[cfg(feature = "unsafe_fast_code")]
 fn test_replace_n() {
 	// Create elements and slice
 	let base = RcVec::new(14);

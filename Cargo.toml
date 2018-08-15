@@ -1,6 +1,6 @@
 [package]
 name = "slice_queue"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["KizzyCode Software Labs./Keziah Biermann <development@kizzycode.de>"]
 description = "This library provides an VecDeque for efficient working with (byte-)slices"
 license = "BSD-2-Clause OR MIT"
@@ -8,6 +8,6 @@ repository = "https://github.com/KizzyCode/slice_queue"
 readme = "README.md"
 
 [features]
-default = ["deref"]
+default = ["deref", "unsafe_fast_code"]
 deref = []
-fast_unsafe_code = []
+unsafe_fast_code = []

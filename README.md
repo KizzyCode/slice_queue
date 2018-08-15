@@ -20,9 +20,10 @@ This library provides a optimized queue for efficient working with (byte-)slices
  - `deref`: This feature allows you to deref the `SliceQueue<T>` by propagating any `deref()`-call to the underlying
    `Vec<T>` (which usually results in a slice). Because in some projects this could be considered as "bad practice", it
    is possible to disable this behaviour. __This feature is enabled by default.__
- - `fast_unsafe_code`: To get even more performance, you can use the feature `fast_unsafe_code`. This replaces some safe
-   `Vec`-operations with raw pointer access and manual memory management. Especially if you work with a lot of
-   `Copy`-types, this can improve the performance dramatically. __This feature is disabled by default.__
+ - `unsafe_fast_code`: Because the main goal of this library is performance, we use raw pointer access and manual memory
+   managementin some places. Especially for `Copy`-types like `u8`, this improves the performance dramatically. Since
+   this requires unsafe code which may be not acceptible in your case, it is possible to replace the unsafe code with
+   safe `Vec`-operations by disabling this feature. __This feature is enabled by default.__
 
 
 ## Build Documentation and Library:
