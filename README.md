@@ -11,7 +11,7 @@ This library provides a optimized queue for efficient working with (byte-)slices
    a slice (if the type supports the `Clone`/`Copy` trait)
  - communicate and enforce a limit on the amount of elements to store
  - efficiently pop an arbitrary amount of elements from the front (optionally into a to avoid uneccessary reallocations)
- - access the underlying buffer directly by either using `peek*` methods or (range-)indices
+ - access the underlying buffer directly by using either `peek*` methods or (range-)indices
  - dereference the `SliceQueue<T>` by propagating the `deref()`-call to the underlying `Vec<T>` (can be disabled; see
    [Feature-Gates](#feature-gates))
 
