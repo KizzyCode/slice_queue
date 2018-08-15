@@ -11,12 +11,14 @@ use std::{
 	usize, fmt::{ Debug, Formatter, Result as FmtResult },
 	ops::{
 		Index, IndexMut,
-		Range, RangeFrom, RangeTo, RangeInclusive, RangeToInclusive, RangeBounds, Bound,
-		Deref, DerefMut
+		Range, RangeFrom, RangeTo, RangeInclusive, RangeToInclusive, RangeBounds, Bound
 	}
 };
 #[cfg(feature = "fast_unsafe_code")]
 use std::{ ptr, mem };
+#[cfg(feature = "deref")]
+use std::ops::{ Deref, DerefMut };
+
 
 #[derive(Default)]
 pub struct SliceQueue<T> {
@@ -300,7 +302,7 @@ impl<T> SliceQueue<T> {
 }
 impl<T: Debug> Debug for SliceQueue<T> {
 	fn fmt(&self, f: &mut Formatter) -> FmtResult {
-		Debug::fmt(&**self, f)
+		f.debug_struct("SliceQueue").field("backing", &self.backing).finish()
 	}
 }
 impl<T> From<Vec<T>> for SliceQueue<T> {
