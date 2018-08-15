@@ -11,9 +11,11 @@ What this library is:
 This library provides a optimized queue for efficient working with (byte-)slices. It allows you to
  - efficiently push an arbitrary amount of elements by either consuming them or by cloning them from a slice (if the
    type supports the `Clone` trait)
- - efficiently popping an arbitrary amount of elements from the front
- - direct access to the underlying buffer by either using `peek*` methods or by using (range-)indices
- - dereferencing the `SliceQueue<T>` like it's a `Vec<T>` (which usually results in a slice)
+ - efficiently push an arbitrary amount of elements by either consuming them or by cloning/copying them from a slice (if
+   the type supports the `Clone`/`Copy` trait)
+ - efficiently pop an arbitrary amount of elements from the front
+ - access the underlying buffer directly by either using `peek*` methods or by using (range-)indices
+ - dereference the `SliceQueue<T>` like it's a `Vec<T>` (which usually results in a slice)
 
 _Important: If you use the feature `fast_unsafe_code`, we use some raw-memory-access and -management to speed things up.
 Especially if you work a lot of `Copy`-types, this may improve the performance drastically. This feature is disabled by

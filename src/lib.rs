@@ -2,10 +2,10 @@
 //! It allows you to
 //!  - efficiently push an arbitrary amount of elements by either consuming them or by cloning them
 //!    from a slice (if the type supports the `Clone` trait)
-//!  - efficiently popping an arbitrary amount of elements from the front
-//!  - direct access to the underlying buffer by either using `peek*` methods or by using
+//!  - efficiently pop an arbitrary amount of elements from the front
+//!  - access the underlying buffer directly by either using `peek*` methods or by using
 //!    (range-)indices
-//!  - dereferencing the `SliceQueue<T>` like it's a `Vec<T>` (which usually results in a slice)
+//!  - dereference the `SliceQueue<T>` like it's a `Vec<T>` (which usually results in a slice)
 
 use std::{
 	usize, fmt::{ Debug, Formatter, Result as FmtResult },
