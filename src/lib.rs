@@ -22,14 +22,15 @@ use std::ops::{ Deref, DerefMut };
 
 #[derive(Default)]
 pub struct SliceQueue<T> {
-	backing: Vec<T>
+	backing: Vec<T>,
+	limit: usize
 }
 impl<T> SliceQueue<T> {
 	/// Creates a new `SliceQueue`
 	///
 	/// Returns _the new `SliceQueue`_
 	pub fn new() -> Self {
-		SliceQueue{ backing: Vec::new() }
+		SliceQueue{ backing: Vec::new(), limit: usize::MAX }
 	}
 	/// Creates a new `SliceQueue` with a preallocated capacity `n`
 	///
@@ -38,7 +39,17 @@ impl<T> SliceQueue<T> {
 	///
 	/// Returns _the new `SliceQueue`_
 	pub fn with_capacity(n: usize) -> Self {
-		SliceQueue{ backing: Vec::with_capacity(n) }
+		SliceQueue{ backing: Vec::with_capacity(n), limit: usize::MAX }
+	}
+	/// Creates a new `SliceQueue` with a predefined `limit` (the default limit is `usize::MAX`)
+	///
+	/// Parameters:
+	///  - `limit`: The limit to enforce. The limit indicates the maximum amount of elements that
+	///    can be stored by `self`.
+	///
+	/// Returns _the new `SliceQueue`_
+	pub fn with_limit(limit: usize) -> Self {
+		SliceQueue{ backing: Vec::new(), limit }
 	}
 	
 	
@@ -54,6 +65,7 @@ impl<T> SliceQueue<T> {
 	pub fn is_empty(&self) -> bool {
 		self.backing.is_empty()
 	}
+	
 	/// Returns the allocated capacity
 	///
 	/// Returns _the allocated capacity of `self`_
@@ -69,19 +81,37 @@ impl<T> SliceQueue<T> {
 	pub fn reserve(&mut self, additional_element_count: usize) {
 		self.backing.reserve(additional_element_count)
 	}
-	/// Shrinks the allocated capacity if less than it's half is used. This basically mirrors `Vec`'s
-	/// allocation strategy.
+	/// Shrinks the allocated capacity if less than it's half is used or the allocated capacity is
+	/// greater than `self.limit`.
 	pub fn shrink_opportunistic(&mut self) {
 		// Compute the half capacity
 		let half_capacity = if self.capacity() == 0 { 0 }
 			else { self.capacity() / 2 };
 		
 		// Resize the backing if the used space is smaller than the half capacity
-		if self.len() > 4 && self.len() <= half_capacity { self.backing.shrink_to_fit() }
+		if self.len() > 4 && (self.len() <= half_capacity || self.capacity() > self.limit) { self.backing.shrink_to_fit() }
 	}
 	/// Shrinks the allocated capacity as much as possible
 	pub fn shrink_to_fit(&mut self) {
 		self.backing.shrink_to_fit()
+	}
+	
+	/// Returns the current limit
+	///
+	/// Returns _the current size-limit of `self`_
+	pub fn limit(&self) -> usize {
+		self.limit
+	}
+	/// Sets a new limit (the default limit is `usize::MAX`)
+	///
+	/// _Info: The limit is only enforced during the `push*`-calls. If the current length exceeds
+	/// the new limit, nothing happens until a `push*`-call would exceed the limit._
+	///
+	/// Parameters:
+	///  - `limit`: The new limit to enforce. The limit indicates the maximum amount of elements
+	///    that can be stored by `self`.
+	pub fn set_limit(&mut self, limit: usize) {
+		self.limit = limit
 	}
 	
 	
@@ -233,23 +263,35 @@ impl<T> SliceQueue<T> {
 	
 	/// Appends `element` at the end
 	///
+	/// __Warning: This function panics if `self.limit` is exceeded__
+	///
 	/// Parameters:
 	///  - `element`: The element to append at the end
 	pub fn push(&mut self, element: T) {
+		assert!(self.limit >= self.len() + 1, "`self.len() + 1` is larger than `self.limit`");
+		
 		self.backing.push(element)
 	}
 	/// Appends `n` at the end
 	///
+	/// __Warning: This function panics if `self.limit` is exceeded__
+	///
 	/// Parameters:
 	///  - `n`: The n elements to append at the end
 	pub fn push_n(&mut self, mut n: Vec<T>) {
+		assert!(self.limit >= self.len() + n.len(), "`self.len() + n.len()` is larger than `self.limit`");
+		
 		self.backing.append(&mut n);
 	}
 	/// Clones and appends all elements in `src` at the end
 	///
+	/// __Warning: This function panics if `self.limit` is exceeded__
+	///
 	/// Parameters:
 	///  - `src`: A slice containing the elements to clone and append
 	pub fn push_from(&mut self, src: &[T]) where T: Clone {
+		assert!(self.limit > self.len() + src.len(), "`self.len() + src.len()` is larger than `self.limit`");
+		
 		self.backing.extend_from_slice(src)
 	}
 	
@@ -307,12 +349,12 @@ impl<T: Debug> Debug for SliceQueue<T> {
 }
 impl<T> From<Vec<T>> for SliceQueue<T> {
 	fn from(vec: Vec<T>) -> Self {
-		SliceQueue { backing: vec }
+		SliceQueue{ backing: vec, limit: usize::MAX }
 	}
 }
 impl<T> Clone for SliceQueue<T> where T: Clone {
 	fn clone(&self) -> Self {
-		SliceQueue { backing: self.backing.clone() }
+		SliceQueue{ backing: self.backing.clone(), limit: self.limit }
 	}
 }
 
