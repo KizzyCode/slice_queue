@@ -1,11 +1,22 @@
+//! This library provides `SliceQueue`, a optimized queue for efficient working with (byte-)slices.
+//! It allows you to
+//!  - efficiently push an arbitrary amount of elements by either consuming them or by cloning them
+//!    from a slice (if the type supports the `Clone` trait)
+//!  - efficiently popping an arbitrary amount of elements from the front
+//!  - direct access to the underlying buffer by either using `peek*` methods or by using
+//!    (range-)indices
+//!  - dereferencing the `SliceQueue<T>` like it's a `Vec<T>` (which usually results in a slice)
+
 use std::{
-	usize, ptr, fmt::{ Debug, Formatter, Result as FmtResult },
+	usize, fmt::{ Debug, Formatter, Result as FmtResult },
 	ops::{
 		Index, IndexMut,
 		Range, RangeFrom, RangeTo, RangeInclusive, RangeToInclusive, RangeBounds, Bound,
 		Deref, DerefMut
 	}
 };
+#[cfg(feature = "fast_unsafe_code")]
+use std::{ ptr, mem };
 
 #[derive(Default)]
 pub struct SliceQueue<T> {
@@ -96,44 +107,60 @@ impl<T> SliceQueue<T> {
 		if self.len() < n { return None }
 		
 		// Copy elements into a new vector
-		let mut elements = Vec::with_capacity(n);
-		let remaining = self.len() - n;
-		unsafe {
-			// Copy stored elements to the new vector
+		#[cfg(feature = "fast_unsafe_code")]
+		let elements = unsafe {
+			// Create target vector
+			let mut elements = Vec::with_capacity(n);
+			let remaining = self.len() - n;
+			
+			// Copy stored elements to the new vector and the remaining elements to the front
 			ptr::copy_nonoverlapping(self.backing.as_ptr(), elements.as_mut_ptr(), n);
-			// Move the remaining stored elements to the front
 			ptr::copy(self.backing[n..].as_ptr(), self.backing.as_mut_ptr(), remaining);
+			
 			// Adjust the lengths
 			elements.set_len(n);
 			self.backing.set_len(remaining);
-		}
-		self.shrink_opportunistic();
+			
+			elements
+		};
+		#[cfg(not(feature = "fast_unsafe_code"))]
+		let elements = /* safe */ {
+			// Drain `n` elements and collect them
+			self.backing.drain(..n).collect()
+		};
 		
+		self.shrink_opportunistic();
 		Some(elements)
 	}
-	/// Consumes the first `target.len()` and moves them into `target`
+	/// Consumes the first `dst.len()` and moves them into `dst`
 	///
-	/// __Warning: This function panics if there are not enough elements stored to fill `target`
+	/// __Warning: This function panics if there are not enough elements stored to fill `dst`
 	/// completely__
 	///
 	/// Parameters:
-	///  - `target`: The target to move the elements into
-	pub fn pop_into(&mut self, target: &mut[T]) {
-		assert!(self.len() >= target.len(), "`target` is larger than `self`");
+	///  - `dst`: The target to move the elements into
+	pub fn pop_into(&mut self, dst: &mut[T]) {
+		assert!(self.len() >= dst.len(), "`dst` is larger than `self`");
 		
 		// Copy raw data
-		let to_copy = target.len();
-		let remaining = self.len() - to_copy;
+		let to_move = dst.len();
+		#[cfg(feature = "fast_unsafe_code")]
 		unsafe {
-			// Deallocate the elements in `target`
-			Self::drop_elements(target.as_mut_ptr(), to_copy);
-			// Copy stored elements to `target`
-			ptr::copy_nonoverlapping(self.backing.as_ptr(), target.as_mut_ptr(), to_copy);
-			// Move the remaining stored elements to the front
-			ptr::copy(self.backing[to_copy..].as_ptr(), self.backing.as_mut_ptr(), remaining);
-			// Adjust the length
+			// Replace the elements in dst
+			Self::replace_n(self.backing.as_ptr(), dst.as_mut_ptr(), to_move);
+			
+			// Move the remaining stored elements to the front and adjust length
+			let remaining = self.len() - to_move;
+			ptr::copy(self.backing[to_move..].as_ptr(), self.backing.as_mut_ptr(), remaining);
 			self.backing.set_len(remaining);
 		}
+		#[cfg(not(feature = "fast_unsafe_code"))]
+		/* safe */ {
+			// Move `to_move` elements into `dst`
+			let (mut src, dst) = (self.backing.drain(..to_move), dst.iter_mut());
+			dst.for_each(|t| *t = src.next().unwrap());
+		}
+		
 		self.shrink_opportunistic();
 	}
 	
@@ -148,14 +175,17 @@ impl<T> SliceQueue<T> {
 		assert!(self.len() >= n, "`n` is larger than the amount of elements in `self`");
 		
 		// Drop `n` elements and copy the remaining elements to the front
-		let remaining = self.len() - n;
+		#[cfg(feature = "fast_unsafe_code")]
 		unsafe {
-			// Deallocate the elements to discard
-			Self::drop_elements(self.as_mut_ptr(), n);
-			// Move the remaining stored elements to the front
-			ptr::copy(self.backing[n..].as_ptr(), self.backing.as_mut_ptr(), remaining);
-			// Adjust the length
+			// Move the remaining stored elements to the front and adjust the length
+			let remaining = self.len() - n;
+			Self::replace_n(self.backing[n..].as_ptr(), self.backing.as_mut_ptr(), remaining);
 			self.backing.set_len(remaining);
+		}
+		#[cfg(not(feature = "fast_unsafe_code"))]
+		/* safe */ {
+			// Drain `n` elements from the front
+			self.backing.drain(..n);
 		}
 		self.shrink_opportunistic();
 	}
@@ -213,12 +243,12 @@ impl<T> SliceQueue<T> {
 	pub fn push_n(&mut self, mut n: Vec<T>) {
 		self.backing.append(&mut n);
 	}
-	/// Clones and appends all elements in `source` at the end
+	/// Clones and appends all elements in `src` at the end
 	///
 	/// Parameters:
-	///  - `source`: A slice containing the elements to clone and append
-	pub fn push_from(&mut self, source: &[T]) where T: Clone {
-		self.backing.extend_from_slice(source)
+	///  - `src`: A slice containing the elements to clone and append
+	pub fn push_from(&mut self, src: &[T]) where T: Clone {
+		self.backing.extend_from_slice(src)
 	}
 	
 	
@@ -244,16 +274,28 @@ impl<T> SliceQueue<T> {
 		};
 		start_included..end_excluded
 	}
-	/// A private helper that drops `length` elements referenced by `ptr`
+	/// A private helper that copies `n` elements from `src` to `dst`. The elements in `dst` are
+	/// dropped if necessary.
+	///
+	/// __Warning: Because this function operates on raw memory, YOU must take care of stuff like
+	/// memory-safety, ownership and ref-counts of the copied elements etc.__
 	///
 	/// Parameters:
-	///  - `ptr`: The pointer referencing the elements to drop
-	///  - `length`: The amount of elements to drop
-	unsafe fn drop_elements(mut ptr: *mut T, length: usize) {
-		(0..length).for_each(|_| {
-			ptr.drop_in_place();
-			ptr = ptr.offset(1);
-		})
+	///  - `src`: A pointer to the source elements
+	///  - `dst`: A pointer to the destination
+	///  - `n`: The amount of elements to copy
+	#[cfg(feature = "fast_unsafe_code")]
+	unsafe fn replace_n(src: *const T, dst: *mut T, n: usize) {
+		// Drop elements in dst if necessary
+		if mem::needs_drop::<T>() {
+			let mut ptr = dst;
+			(0..n).for_each(|_| {
+				ptr.drop_in_place();
+				ptr = ptr.offset(1);
+			})
+		}
+		// Copy src to dst
+		ptr::copy(src, dst, n);
 	}
 }
 impl<T: Debug> Debug for SliceQueue<T> {

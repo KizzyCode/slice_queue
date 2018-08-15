@@ -15,8 +15,9 @@ This library provides a optimized queue for efficient working with (byte-)slices
  - direct access to the underlying buffer by either using `peek*` methods or by using (range-)indices
  - dereferencing the `SliceQueue<T>` like it's a `Vec<T>` (which usually results in a slice)
 
-_Important: To be as efficient as possible it uses some raw pointer access. If this is a no-go for you, please either
-use another crate or provide some patches 😇_ 
+_Important: If you use the feature `fast_unsafe_code`, we use some raw-memory-access and -management to speed things up.
+Especially if you work a lot of `Copy`-types, this may improve the performance drastically. This feature is disabled by
+default._
 
 
 Build Documentation and Library:

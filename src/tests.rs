@@ -106,19 +106,20 @@ fn test_range_from_bounds_end_underflow() {
 	slice_queue.range_from_bounds(0..=0);
 }
 
-#[test]
-fn test_drop_elements() {
+#[test] #[cfg(feature = "fast_unsafe_code")]
+fn test_replace_n() {
 	// Create elements and slice
 	let base = RcVec::new(14);
 	let mut clone = base.0.clone();
 	
 	// "Forget" the elements in clone by "emptying" the vector
-	unsafe{ clone.set_len(0); }
+	unsafe{ clone.set_len(7); }
 	// Validate that the elements have not been dropped (the Rcs' ref-counts still are 2)
 	base.validate(0..14, 2);
 	
-	// Drop all elements in clone
-	unsafe{ SliceQueue::drop_elements(clone.as_mut_ptr(), base.0.len()); }
+	// Replace the first 7 elements
+	unsafe{ SliceQueue::replace_n(clone[7..].as_ptr(), clone.as_mut_ptr(), 7) }
 	// Validate that the elements have been dropped
-	base.validate(0..14, 1);
+	base.validate(0..7, 1);
+	base.validate(7..14, 2);
 }
