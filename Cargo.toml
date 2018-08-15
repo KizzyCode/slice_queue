@@ -8,5 +8,6 @@ repository = "https://github.com/KizzyCode/slice_queue"
 readme = "README.md"
 
 [features]
-default = []
+default = ["deref"]
+deref = []
 fast_unsafe_code = []

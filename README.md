@@ -9,17 +9,26 @@ Welcome to my `slice_queue`-library 🎊
 What this library is:
 ---------------------
 This library provides a optimized queue for efficient working with (byte-)slices. It allows you to
- - efficiently push an arbitrary amount of elements by either consuming them or by cloning them from a slice (if the
-   type supports the `Clone` trait)
- - efficiently push an arbitrary amount of elements by either consuming them or by cloning/copying them from a slice (if
-   the type supports the `Clone`/`Copy` trait)
- - efficiently pop an arbitrary amount of elements from the front
- - access the underlying buffer directly by either using `peek*` methods or by using (range-)indices
- - dereference the `SliceQueue<T>` like it's a `Vec<T>` (which usually results in a slice)
+ - efficiently push an arbitrary amount of elements to the back by either consuming them or by cloning/copying them from
+   a slice (if the type supports the `Clone`/`Copy` trait)
+ - efficiently pop an arbitrary amount of elements from the front (optionally into a to avoid uneccessary reallocations)
+ - access the underlying buffer directly by either using `peek*` methods or (range-)indices
+ - dereference the `SliceQueue<T>` by propagating the `deref()`-call to the underlying `Vec<T>` (see
+   [Feature `deref`](#feature-deref))
 
-_Important: If you use the feature `fast_unsafe_code`, we use some raw-memory-access and -management to speed things up.
-Especially if you work a lot of `Copy`-types, this may improve the performance drastically. This feature is disabled by
-default._
+
+Feature `deref`
+---------------
+This feature allows you to deref the `SliceQueue<T>` by propagating any `deref()`-call to the underlying `Vec<T>` (which
+usually results in a slice). Because in some projects this could be considered as "bad practice", it is possible to
+disable this behaviour. _This feature is enabled by default_
+
+
+Feature `fast_unsafe_code`
+--------------------------
+To get even more performance, you can use the feature `fast_unsafe_code`. This replaces some safe operations with raw
+pointer access and manual memory management, which can improve the performance dramatically; especially if you work with
+a lot of `Copy`-types. _This feature is disabled by default._
 
 
 Build Documentation and Library:

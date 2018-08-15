@@ -348,12 +348,14 @@ impl<T> IndexMut<usize> for SliceQueue<T> {
 	}
 }
 
+#[cfg(feature = "deref")]
 impl<T> Deref for SliceQueue<T> {
 	type Target = <Vec<T> as Deref>::Target;
 	fn deref(&self) -> &Self::Target {
 		self.backing.deref()
 	}
 }
+#[cfg(feature = "deref")]
 impl<T> DerefMut for SliceQueue<T> {
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		self.backing.deref_mut()
