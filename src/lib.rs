@@ -273,6 +273,12 @@ impl<T> SliceQueue<T> {
 	///  3. If the amount of elements pushed is smaller than `n` or an error occurred, the unused
 	///     default elements are removed again
 	///
+	/// Parameters:
+	///  - `n`: The amount of bytes to reserve
+	///  - `push_fn`: The pushing callback
+	///
+	/// Returns either _the amount of elements pushed_ or _the error `push_fn` returned_
+	///
 	/// Example:
 	/// ```
 	/// # extern crate slice_queue;
@@ -295,7 +301,7 @@ impl<T> SliceQueue<T> {
 	/// assert_eq!(slice_queue.len(), 4);
 	/// (0..4).for_each(|i| assert_eq!(slice_queue[i], i));
 	///	```
-	pub fn push_in_place<E>(&mut self, n: usize, mut push_fn: impl FnMut(&mut[T]) -> Result<usize, E>) -> Result<(), E> where T: Default {
+	pub fn push_in_place<E>(&mut self, n: usize, mut push_fn: impl FnMut(&mut[T]) -> Result<usize, E>) -> Result<usize, E> where T: Default {
 		assert!(self.limit >= self.len() + n, "`self.len() + n` is larger than `self.limit`");
 		
 		// Append `n` default elements
@@ -326,7 +332,7 @@ impl<T> SliceQueue<T> {
 		});
 		self.shrink_opportunistic();
 		
-		pushed.map(|_| ())
+		pushed
 	}
 	
 	/// A private helper function to translate `RangeBounds` into ranges relative to `self`
