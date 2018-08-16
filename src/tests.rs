@@ -18,7 +18,7 @@ fn test_shrink_opportunistic() {
 	let mut slice_queue = SliceQueue::from(vec![0u8; 14]);
 	
 	// Discard 6 elements
-	slice_queue.discard_n(6);
+	slice_queue.discard_n(6).unwrap();
 	assert_eq!(slice_queue.len(), 8);
 	assert_eq!(slice_queue.backing.capacity(), 14);
 	
@@ -59,7 +59,7 @@ fn test_pop_into() {
 	base.validate(0..14, 2);
 	
 	// Pop the first 7 elements and validate the popped and remaining elements
-	slice_queue.pop_into(&mut buffer);
+	slice_queue.pop_into(&mut buffer).unwrap();
 	assert_eq!(slice_queue.len(), 7);
 	(0..7).for_each(|i| assert_eq!(*buffer[i], i));
 	(0..7).for_each(|i| assert_eq!(*slice_queue[i], i + 7));
@@ -79,7 +79,7 @@ fn test_discard_n() {
 	base.validate(0..14, 2);
 	
 	// Discard the first 7 elements and validate the remaining elements
-	slice_queue.discard_n(7);
+	slice_queue.discard_n(7).unwrap();
 	assert_eq!(slice_queue.len(), 7);
 	(0..7).for_each(|i| assert_eq!(*slice_queue[i], i + 7));
 	

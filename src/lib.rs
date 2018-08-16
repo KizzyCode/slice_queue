@@ -9,7 +9,7 @@
 //!  - dereference the `SliceQueue<T>` by propagating the `deref()`-call to the underlying `Vec<T>`
 
 use std::{
-	usize, fmt::{ Debug, Formatter, Result as FmtResult },
+	usize, cmp::min, fmt::{ Debug, Formatter, Result as FmtResult },
 	ops::{
 		Index, IndexMut,
 		Range, RangeFrom, RangeTo, RangeInclusive, RangeToInclusive, RangeBounds, Bound
@@ -29,7 +29,7 @@ pub struct SliceQueue<T> {
 impl<T> SliceQueue<T> {
 	/// Creates a new `SliceQueue`
 	///
-	/// Returns _the new `SliceQueue`_
+	/// Returns __the new `SliceQueue`__
 	pub fn new() -> Self {
 		SliceQueue{ backing: Vec::new(), limit: usize::MAX }
 	}
@@ -38,7 +38,7 @@ impl<T> SliceQueue<T> {
 	/// Parameters:
 	///  - `n`: The capacity to preallocate
 	///
-	/// Returns _the new `SliceQueue`_
+	/// Returns __the new `SliceQueue`__
 	pub fn with_capacity(n: usize) -> Self {
 		SliceQueue{ backing: Vec::with_capacity(n), limit: usize::MAX }
 	}
@@ -48,7 +48,7 @@ impl<T> SliceQueue<T> {
 	///  - `limit`: The limit to enforce. The limit indicates the maximum amount of elements that
 	///    can be stored by `self`.
 	///
-	/// Returns _the new `SliceQueue`_
+	/// Returns __the new `SliceQueue`__
 	pub fn with_limit(limit: usize) -> Self {
 		SliceQueue{ backing: Vec::new(), limit }
 	}
@@ -56,20 +56,21 @@ impl<T> SliceQueue<T> {
 	
 	/// The amount of elements stored
 	///
-	/// Returns _the amount of elements stored in `self`_
+	/// Returns __the amount of elements stored in `self`__
 	pub fn len(&self) -> usize {
 		self.backing.len()
 	}
 	/// Checks if there are __no__ elements stored
 	///
-	/// Returns either _`true`_ if `self` is empty or _`false`_ otherwise
+	/// Returns either __`true`__ if `self` is empty or __`false`__ otherwise
 	pub fn is_empty(&self) -> bool {
 		self.backing.is_empty()
 	}
 	
-	/// Returns the allocated capacity
+	
+	/// The allocated capacity
 	///
-	/// Returns _the allocated capacity of `self`_
+	/// Returns __the allocated capacity of `self`__
 	pub fn capacity(&self) -> usize {
 		self.backing.capacity()
 	}
@@ -97,9 +98,10 @@ impl<T> SliceQueue<T> {
 		self.backing.shrink_to_fit()
 	}
 	
-	/// Returns the current limit
+	
+	/// The current limit
 	///
-	/// Returns _the current size-limit of `self`_
+	/// Returns __the current size-limit of `self`__
 	pub fn limit(&self) -> usize {
 		self.limit
 	}
@@ -114,23 +116,25 @@ impl<T> SliceQueue<T> {
 	pub fn set_limit(&mut self, limit: usize) {
 		self.limit = limit
 	}
-	/// Returns the amount of space remaining until `self.limit` is reached
+	/// The amount of space remaining until `self.limit` is reached
 	///
-	/// Returns _the amount of space remaining in `self` until `self.limit` is reached_
+	/// Returns __the amount of space remaining in `self` until `self.limit` is reached__
 	pub fn remaining(&self) -> usize {
 		self.limit.checked_sub(self.len()).unwrap_or_default()
 	}
 	
+	
 	/// Consumes the first element and returns it
 	///
-	/// Returns either _`Some(element)`_ if there was an element to consume or _`None`_ otherwise
-	pub fn pop(&mut self) -> Option<T> {
+	/// Returns either __`Ok(element)`__ if there was an element to consume or __`Err(())`__
+	/// otherwise
+	pub fn pop(&mut self) -> Result<T, ()> {
 		match self.is_empty() {
-			true => None,
+			true => Err(()),
 			false => {
 				let element = self.backing.remove(0);
 				self.shrink_opportunistic();
-				Some(element)
+				Ok(element)
 			}
 		}
 	}
@@ -139,24 +143,23 @@ impl<T> SliceQueue<T> {
 	/// Parameters:
 	///  - `n`: The amount of elements to consume
 	///
-	/// Returns either _`Some(elements)`_ if there were enough elements to consume or _`None`_
-	/// otherwise
-	pub fn pop_n(&mut self, n: usize) -> Option<Vec<T>> {
-		if self.len() < n { return None }
-		
-		// Copy elements into a new vector
+	/// Returns either __`Ok(elements)`__ if there were `n` elements avaliable to consume or
+	/// __`Err(elements)`__ if less elements were available
+	pub fn pop_n(&mut self, n: usize) -> Result<Vec<T>, Vec<T>> {
+		// Move elements into a new vector
+		let to_consume = min(self.len(), n);
 		#[cfg(feature = "unsafe_fast_code")]
 		let elements = unsafe {
 			// Create target vector
-			let mut elements = Vec::with_capacity(n);
-			let remaining = self.len() - n;
+			let mut elements = Vec::with_capacity(to_consume);
+			let remaining = self.len() - to_consume;
 			
 			// Copy stored elements to the new vector and the remaining elements to the front
-			ptr::copy_nonoverlapping(self.backing.as_ptr(), elements.as_mut_ptr(), n);
+			ptr::copy_nonoverlapping(self.backing.as_ptr(), elements.as_mut_ptr(), to_consume);
 			ptr::copy(self.backing[n..].as_ptr(), self.backing.as_mut_ptr(), remaining);
 			
 			// Adjust the lengths
-			elements.set_len(n);
+			elements.set_len(to_consume);
 			self.backing.set_len(remaining);
 			
 			elements
@@ -164,24 +167,24 @@ impl<T> SliceQueue<T> {
 		#[cfg(not(feature = "unsafe_fast_code"))]
 		let elements = /* safe */ {
 			// Drain `n` elements and collect them
-			self.backing.drain(..n).collect()
+			self.backing.drain(..to_consume).collect()
 		};
 		
+		// Shrink and return result
 		self.shrink_opportunistic();
-		Some(elements)
+		if to_consume == n { Ok(elements) }
+			else { Err(elements) }
 	}
 	/// Consumes the first `dst.len()` and moves them into `dst`
 	///
-	/// __Warning: This function panics if there are not enough elements stored to fill `dst`
-	/// completely__
-	///
 	/// Parameters:
 	///  - `dst`: The target to move the elements into
-	pub fn pop_into(&mut self, dst: &mut[T]) {
-		assert!(self.len() >= dst.len(), "`dst` is larger than `self`");
-		
+	///
+	/// Returns either __`Ok(())`__ if `dst` was filled completely or __`Err(element_count)`__ if
+	/// only `element_count` elements were moved
+	pub fn pop_into(&mut self, dst: &mut[T]) -> Result<(), usize> {
 		// Copy raw data
-		let to_move = dst.len();
+		let to_move = min(self.len(), dst.len());
 		#[cfg(feature = "unsafe_fast_code")]
 		unsafe {
 			// Replace the elements in dst
@@ -199,68 +202,85 @@ impl<T> SliceQueue<T> {
 			dst.for_each(|t| *t = src.next().unwrap());
 		}
 		
+		// Shrink and return result
 		self.shrink_opportunistic();
+		if to_move == dst.len() { Ok(()) }
+			else { Err(to_move) }
 	}
 	
 	
 	/// Discards the first `n` elements
 	///
-	/// __Warning: This function panics if there are less than `n` elements stored in `self`__
-	///
 	/// Parameters:
 	///  - `n`: The amount of elements to discard
-	pub fn discard_n(&mut self, n: usize) {
-		assert!(self.len() >= n, "`n` is larger than the amount of elements in `self`");
-		
+	///
+	/// Returns either __`Ok(())`__ if `n` elements were discarded or __`Err(element_count)`__ if
+	/// only `element_count` elements were discarded
+	pub fn discard_n(&mut self, n: usize) -> Result<(), usize> {
 		// Drop `n` elements and copy the remaining elements to the front
+		let to_discard = min(self.len(), n);
 		#[cfg(feature = "unsafe_fast_code")]
 		unsafe {
 			// Move the remaining stored elements to the front and adjust the length
-			let remaining = self.len() - n;
-			Self::replace_n(self.backing[n..].as_ptr(), self.backing.as_mut_ptr(), remaining);
+			let remaining = self.len() - to_discard;
+			Self::replace_n(self.backing[to_discard..].as_ptr(), self.backing.as_mut_ptr(), remaining);
 			self.backing.set_len(remaining);
 		}
 		#[cfg(not(feature = "unsafe_fast_code"))]
 		/* safe */ {
 			// Drain `n` elements from the front
-			self.backing.drain(..n);
+			self.backing.drain(..to_discard);
 		}
+		
+		// Shrink and return result
 		self.shrink_opportunistic();
+		if to_discard == n { Ok(()) }
+			else { Err(to_discard) }
 	}
 	
 	
 	/// Appends `element` at the end
 	///
-	/// __Warning: This function panics if `self.limit` is exceeded__
-	///
 	/// Parameters:
 	///  - `element`: The element to append at the end
-	pub fn push(&mut self, element: T) {
-		assert!(self.limit >= self.len() + 1, "`self.len() + 1` is larger than `self.limit`");
-		
-		self.backing.push(element)
+	///
+	/// Returns either __`Ok(())`__ if the element was pushed successfully or __`Err(element)`__ if
+	/// `element` was not appended because `self.limit` would have been exceeded
+	pub fn push(&mut self, element: T) -> Result<(), T> {
+		if self.remaining() >= 1 { Ok(self.backing.push(element)) }
+			else { Err(element) }
 	}
 	/// Appends `n` at the end
 	///
-	/// __Warning: This function panics if `self.limit` is exceeded__
-	///
 	/// Parameters:
 	///  - `n`: The n elements to append at the end
-	pub fn push_n(&mut self, mut n: Vec<T>) {
-		assert!(self.limit >= self.len() + n.len(), "`self.len() + n.len()` is larger than `self.limit`");
-		
-		self.backing.append(&mut n);
-	}
-	/// Clones and appends all elements in `src` at the end
 	///
-	/// __Warning: This function panics if `self.limit` is exceeded__
+	/// Returns either __`Ok(())`__ if `n` was appended completely or __`Err(remaining_elements)`__
+	/// if `n` was only appended partially because `self.limit` would have been exceeded
+	pub fn push_n(&mut self, mut n: Vec<T>) -> Result<(), Vec<T>> {
+		if self.remaining() >= n.len() {
+			self.backing.append(&mut n);
+			Ok(())
+		} else {
+			let remaining = n.split_off(self.remaining());
+			self.backing.append(&mut n);
+			Err(remaining)
+		}
+	}
+	/// Clones and appends the elements in `src` at the end
 	///
 	/// Parameters:
 	///  - `src`: A slice containing the elements to clone and append
-	pub fn push_from(&mut self, src: &[T]) where T: Clone {
-		assert!(self.limit >= self.len() + src.len(), "`self.len() + src.len()` is larger than `self.limit`");
+	///
+	/// Returns either __`Ok(())`__ if `src` was appended completely or
+	/// __`Err(remaining_element_count)`__ if `src` was only appended partially because `self.limit`
+	/// would have been exceeded
+	pub fn push_from(&mut self, src: &[T]) -> Result<(), usize> where T: Clone {
+		let to_append = min(self.remaining(), src.len());
+		self.backing.extend_from_slice(&src[..to_append]);
 		
-		self.backing.extend_from_slice(src)
+		if to_append == src.len() { Ok(()) }
+			else { Err(to_append) }
 	}
 	/// Calls `push_fn` to push up to `n` elements in place
 	///
