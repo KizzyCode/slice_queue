@@ -1,6 +1,6 @@
 [package]
 name = "slice_queue"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["KizzyCode Software Labs./Keziah Biermann <development@kizzycode.de>"]
 description = "This library provides an VecDeque for efficient working with (byte-)slices"
 license = "BSD-2-Clause OR MIT"

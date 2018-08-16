@@ -411,6 +411,11 @@ impl<T> From<Vec<T>> for SliceQueue<T> {
 		SliceQueue{ backing: vec, limit: usize::MAX }
 	}
 }
+impl<T> Into<Vec<T>> for SliceQueue<T> {
+	fn into(self) -> Vec<T> {
+		self.backing
+	}
+}
 impl<T> Clone for SliceQueue<T> where T: Clone {
 	fn clone(&self) -> Self {
 		SliceQueue{ backing: self.backing.clone(), limit: self.limit }
