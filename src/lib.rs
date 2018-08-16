@@ -264,6 +264,8 @@ impl<T> SliceQueue<T> {
 	}
 	/// Calls `push_fn` to push up to `n` elements in place
 	///
+	/// __Warning: This function panics if `self.limit` is exceeded__
+	///
 	/// The function works like this:
 	///  1. `n` default elements are inserted at the end
 	///  2. `push_fn` is called with a mutable slice referencing the new elements and returns either
