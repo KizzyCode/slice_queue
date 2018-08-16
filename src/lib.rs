@@ -12,7 +12,7 @@ use std::{
 	usize, cmp::min, fmt::{ Debug, Formatter, Result as FmtResult },
 	ops::{
 		Index, IndexMut,
-		Range, RangeFrom, RangeTo, RangeInclusive, RangeToInclusive, RangeBounds, Bound
+		Range, RangeFrom, RangeTo, RangeFull, RangeInclusive, RangeToInclusive, RangeBounds, Bound
 	}
 };
 #[cfg(feature = "unsafe_fast_code")]
@@ -436,6 +436,7 @@ macro_rules! impl_range_index {
 impl_range_index!(Range<usize>);
 impl_range_index!(RangeFrom<usize>);
 impl_range_index!(RangeTo<usize>);
+impl_range_index!(RangeFull);
 impl_range_index!(RangeInclusive<usize>);
 impl_range_index!(RangeToInclusive<usize>);
 
