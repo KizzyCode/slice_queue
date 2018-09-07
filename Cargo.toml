@@ -1,8 +1,8 @@
 [package]
 name = "slice_queue"
-version = "0.2.2"
+version = "0.3.0"
 authors = ["KizzyCode Software Labs./Keziah Biermann <development@kizzycode.de>"]
-description = "This library provides an VecDeque for efficient working with (byte-)slices"
+description = "This library provides an VecQueue for efficient working with (byte-)slices"
 license = "BSD-2-Clause OR MIT"
 repository = "https://github.com/KizzyCode/slice_queue"
 readme = "README.md"

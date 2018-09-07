@@ -15,6 +15,9 @@ This library provides a optimized queue for efficient working with (byte-)slices
  - access the underlying buffer directly by using (range-)indices
  - dereference the `SliceQueue<T>` by propagating the `deref()`-call to the underlying `Vec<T>` (can be disabled; see
    [Feature-Gates](#feature-gates))
+ - access it using the `io::Read` and `io::Write` traits
+ - "split" it into R/W-halves using the `ReadableSliceQueue<T>` and `WriteableSliceQueue<T>` traits or the `io::Read`
+   and `io::Write` traits
 
 
 ## Feature-Gates
@@ -22,7 +25,7 @@ This library provides a optimized queue for efficient working with (byte-)slices
    `Vec<T>` (which usually results in a slice). Because in some projects this could be considered as "bad practice", it
    is possible to disable this behaviour. __This feature is enabled by default.__
  - `unsafe_fast_code`: Because the main goal of this library is performance, we use raw pointer access and manual memory
-   managementin some places. Especially for `Copy`-types like `u8`, this improves the performance dramatically. Since
+   management in some places. Especially for `Copy`-types like `u8`, this improves the performance dramatically. Since
    this requires unsafe code which may be not acceptible in your case, it is possible to replace the unsafe code with
    safe `Vec`-operations by disabling this feature. __This feature is enabled by default.__
 

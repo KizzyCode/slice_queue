@@ -1,0 +1,24 @@
+language: rust
+rust:
+ - stable
+
+os:
+ - linux
+ - osx
+
+compiler:
+ - gcc
+ - clang
+
+script:
+ - cargo test --verbose
+ - cargo test --verbose --release
+
+ - cargo test --verbose --no-default-features
+ - cargo test --verbose --release --no-default-features
+
+ - cargo test --verbose --no-default-features --features="deref"
+ - cargo test --verbose --release --no-default-features --features="deref"
+
+ - cargo test --verbose --no-default-features --features="unsafe_fast_code"
+ - cargo test --verbose --release --no-default-features --features="unsafe_fast_code"
