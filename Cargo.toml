@@ -7,6 +7,10 @@ license = "BSD-2-Clause OR MIT"
 repository = "https://github.com/KizzyCode/slice_queue"
 readme = "README.md"
 
+[badges]
+travis-ci = { repository = "KizzyCode/slice_queue" }
+appveyor = { repository = "KizzyCode/slice_queue" }
+
 [features]
 default = ["deref", "unsafe_fast_code"]
 deref = []

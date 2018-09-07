@@ -1,5 +1,7 @@
 [![License](https://img.shields.io/badge/License-BSD--2--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Travis CI](https://travis-ci.org/KizzyCode/slice_queue.svg?branch=master)](https://travis-ci.org/KizzyCode/slice_queue)
+[![AppVeyor CI](https://ci.appveyor.com/api/projects/status/github/KizzyCode/slice_queue?svg=true)](https://ci.appveyor.com/project/KizzyCode/slice-queue)
 
 # slice_queue
 Welcome to my `slice_queue`-library 🎊
