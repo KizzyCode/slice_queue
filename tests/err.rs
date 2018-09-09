@@ -59,6 +59,18 @@ fn test_reserve() {
 
 
 #[test]
+fn test_peek() {
+	let slice_queue = SliceQueue::<u8>::new();
+	assert!(slice_queue.peek().is_none())
+}
+#[test]
+fn test_peek_n() {
+	let slice_queue = SliceQueue::from(b"Testolope".as_ref());
+	assert_eq!(slice_queue.peek_n(11).unwrap_err(), b"Testolope");
+}
+
+
+#[test]
 fn test_pop() {
 	let mut slice_queue = SliceQueue::new();
 	assert_eq!(slice_queue.pop().unwrap_err(), ());

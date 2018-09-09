@@ -8,6 +8,19 @@ pub trait ReadableSliceQueue<T> {
 	/// Returns either __`true`__ if `self` is empty or __`false`__ otherwise
 	fn is_empty(&self) -> bool;
 	
+	/// Take a look at the first element __without__ consuming it
+	///
+	/// Returns either _`Some(element_ref)`_ if we have a first element or _`None`_ otherwise
+	fn peek(&self) -> Option<&T>;
+	/// Take a look at the first `n` elements __without__ consuming them
+	///
+	/// Parameters:
+	///  - `n`: The amount of elements to peek at
+	///
+	/// Returns either __`Ok(element_refs)`__ if there were `n` elements avaliable to peek at or
+	/// __`Err(element_refs)`__ if less elements were available
+	fn peek_n(&self, n: usize) -> Result<&[T], &[T]>;
+	
 	/// Consumes the first element and returns it
 	///
 	/// Returns either __`Ok(element)`__ if there was an element to consume or __`Err(())`__

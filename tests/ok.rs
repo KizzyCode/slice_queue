@@ -98,6 +98,19 @@ fn test_shrink_to_fit() {
 
 
 #[test]
+fn test_peek() {
+	let slice_queue = SliceQueue::from(b"Testolope".as_ref());
+	assert_eq!(slice_queue.peek().unwrap(), &b'T');
+}
+#[test]
+fn test_peek_n() {
+	let slice_queue = SliceQueue::from(b"Testolope".as_ref());
+	assert_eq!(slice_queue.peek_n(4).unwrap(), b"Test");
+	assert_eq!(slice_queue.peek_n(9).unwrap(), b"Testolope");
+}
+
+
+#[test]
 fn test_pop() {
 	let mut slice_queue = SliceQueue::from(vec![7; 14]);
 	assert_eq!(slice_queue.len(), 14);
