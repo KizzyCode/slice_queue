@@ -2,10 +2,7 @@ use super::{ mem, ReadableSliceQueue, WriteableSliceQueue };
 use std::{
 	cmp::min, usize, io::{ Read, Write, Result as IoResult },
 	fmt::{ Debug, Formatter, Result as FmtResult },
-	ops::{
-		Index, IndexMut,
-		Range, RangeFrom, RangeTo, RangeFull, RangeInclusive, RangeToInclusive, RangeBounds, Bound
-	}
+	ops::{ Index, IndexMut, Range, RangeFrom, RangeTo, RangeFull, RangeInclusive, RangeToInclusive }
 };
 
 
@@ -130,30 +127,6 @@ impl<T> SliceQueue<T> {
 			AutoShrinkMode::Aggressive => self.shrink_to_fit(),
 			AutoShrinkMode::Disabled => ()
 		}
-	}
-	
-	
-	/// Translate `RangeBounds` into ranges relative to `self`
-	///
-	/// __Warning: This function panics if an exclusive range over- or underflows `usize` limits__
-	///
-	/// Parameters:
-	///  - `bounds`: The `RangeBounds` to translate
-	///
-	/// Returns _the translated range_
-	fn range_from_bounds(&self, bounds: impl RangeBounds<usize>) -> Range<usize> {
-		let start_included = match bounds.start_bound() {
-			Bound::Included(b) => *b,
-			Bound::Excluded(_) => unreachable!(),
-			Bound::Unbounded => 0
-		};
-		let end_excluded = match bounds.end_bound() {
-			Bound::Included(b) => if *b < usize::MAX { *b + 1 }
-				else { panic!("Index usize::MIN - 1 is invalid") },
-			Bound::Excluded(b) => *b,
-			Bound::Unbounded => self.backing.len()
-		};
-		start_included..end_excluded
 	}
 }
 
@@ -455,28 +428,27 @@ impl<T> Clone for SliceQueue<T> where T: Clone {
 }
 
 
-macro_rules! impl_range_index {
-	($b:ty) => {
-		impl<T> Index<$b> for SliceQueue<T> {
+macro_rules! index_impl {
+    ($range_ty:path) => {
+    	impl<T> ::std::ops::Index<$range_ty> for SliceQueue<T> {
 			type Output = [T];
-			fn index(&self, bounds: $b) -> &[T] {
-				&self.backing[self.range_from_bounds(bounds)]
+			fn index(&self, range: $range_ty) -> &[T] {
+				&self.backing[range]
 			}
 		}
-		impl<T> IndexMut<$b> for SliceQueue<T> {
-			fn index_mut(&mut self, bounds: $b) -> &mut [T] {
-				let range = self.range_from_bounds(bounds);
+		impl<T> ::std::ops::IndexMut<$range_ty> for SliceQueue<T> {
+			fn index_mut(&mut self, range: $range_ty) -> &mut[T] {
 				&mut self.backing[range]
 			}
 		}
-	};
+    };
 }
-impl_range_index!(Range<usize>);
-impl_range_index!(RangeFrom<usize>);
-impl_range_index!(RangeTo<usize>);
-impl_range_index!(RangeFull);
-impl_range_index!(RangeInclusive<usize>);
-impl_range_index!(RangeToInclusive<usize>);
+index_impl!(Range<usize>);
+index_impl!(RangeFrom<usize>);
+index_impl!(RangeTo<usize>);
+index_impl!(RangeFull);
+index_impl!(RangeInclusive<usize>);
+index_impl!(RangeToInclusive<usize>);
 
 
 impl<T> Index<usize> for SliceQueue<T> {
